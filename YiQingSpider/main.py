@@ -3,6 +3,7 @@
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
+import sys
 from bs4 import BeautifulSoup
 import time
 from selenium import webdriver
@@ -36,7 +37,7 @@ def query():
 
 class YiQingSpider(object):
 
-    def __init__(self):
+    def __init__(self, show_browser):
         # 需要查询的省份
         self.query_filters = {}
         self.QUERY_PROVINCES = {"河北": {"石家庄市": []}}
@@ -45,13 +46,14 @@ class YiQingSpider(object):
 
         self.risk_blocks = {}
 
-        # 创建可见的Chrome浏览器， 方便调试
-        self.driver = webdriver.Chrome()
-
-        # 创建Chrome的无头浏览器
-        # opt = webdriver.ChromeOptions()
-        # opt.set_headless()
-        # driver = webdriver.Chrome(options=opt)
+        if show_browser:
+            # 创建可见的Chrome浏览器， 方便调试
+            self.driver = webdriver.Chrome()
+        else :
+            # 创建Chrome的无头浏览器
+            opt = webdriver.ChromeOptions()
+            opt.headless = True
+            self.driver = webdriver.Chrome(options=opt)
 
         self._flag = False
         self._wait_time = 1.5
@@ -239,6 +241,9 @@ class YiQingSpider(object):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    YiQingSpider()
+    show_browser = True
+    if len(sys.argv) > 1:
+        show_browser = True if sys.argv[1] == "1" else False
+    YiQingSpider(show_browser)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
