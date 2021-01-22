@@ -2,21 +2,26 @@
 # -*- coding: utf-8 -*-
 
 from spider_base import SpiderBase
-
-HIGH_RISK_LEVEL = u"高风险区"
-MEDIUM_RISK_LEVEL = u"中风险区"
+from spider_base import RiskLevel
 
 
 class ResultSpider(SpiderBase):
     def __init__(self, show_brower=False):
         SpiderBase.__init__(self, show_brower)
-        self.query_risk_block()
+        try:
+            self.query_risk_block()
+        except Exception as e:
+            raise e
+        finally:
+            self.driver.close()
 
     def query_risk_block(self):
+        # self.read_record_from_file("RiskBlock_2021-01-21.txt")
+        # if True:
+        #     return
         # get方式打开网页
         self.driver.get("http://bmfw.www.gov.cn/yqfxdjcx/risk.html")
         # self.output_html()
-
         r_header = self.driver.find_element_by_class_name('r-header')
         r_time = r_header.find_element_by_class_name("r-time")
         print(r_time.text)
@@ -34,7 +39,6 @@ class ResultSpider(SpiderBase):
             print("\n")
         print("-----------------output----------------")
         self.output_risk_record()
-        self.driver.quit()
 
     def get_risk_block(self, is_high):
         prefix = "h" if is_high else "m"
@@ -58,7 +62,7 @@ class ResultSpider(SpiderBase):
 
     def handle_one_risk_page(self, is_high):
         prefix = "h" if is_high else "m"
-        risk_level = HIGH_RISK_LEVEL if is_high else MEDIUM_RISK_LEVEL
+        risk_text = RiskLevel.HIGH_LV_TEXT if is_high else RiskLevel.MEDIUM_LV_TEXT
         container = self.driver.find_element_by_class_name(prefix + "-container")
         headers = container.find_elements_by_class_name(prefix + "-header")
         for header in headers:
@@ -69,13 +73,13 @@ class ResultSpider(SpiderBase):
             block_name = texts[0]
             if style == "display: none;":
                 print(block_name)
-                self.add_risk_block(risk_level, block_name)
+                self.add_risk_block(risk_text, block_name)
             else:
                 trs = table.find_elements_by_tag_name("tr")
                 for tr in trs:
                     h_td1 = tr.find_element_by_class_name(prefix + "-td1")
                     print(block_name + h_td1.text)
-                    self.add_risk_block(risk_level, block_name + h_td1.text)
+                    self.add_risk_block(risk_text, block_name + h_td1.text)
 
 
 if __name__ == '__main__':
