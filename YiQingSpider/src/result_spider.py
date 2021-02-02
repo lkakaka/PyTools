@@ -3,6 +3,8 @@
 
 from spider_base import SpiderBase
 from spider_base import RiskLevel
+import re
+import datetime
 
 
 class ResultSpider(SpiderBase):
@@ -25,6 +27,8 @@ class ResultSpider(SpiderBase):
         r_header = self.driver.find_element_by_class_name('r-header')
         r_time = r_header.find_element_by_class_name("r-time")
         print(r_time.text)
+        match_obj = re.match(r'\D+(\d+-\d+-\d+ \d+).*', r_time.text)
+        self.set_time(match_obj.group(1))
         divs = r_header.find_elements_by_tag_name("div")
         for div in divs:
             div.click()
@@ -39,6 +43,10 @@ class ResultSpider(SpiderBase):
             print("\n")
         print("-----------------output----------------")
         self.output_risk_record()
+
+    def set_time(self, time_str):
+        time_str += ":00:00"
+        self.result_time = datetime.datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
 
     def get_risk_block(self, is_high):
         prefix = "h" if is_high else "m"

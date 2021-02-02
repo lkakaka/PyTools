@@ -1,4 +1,5 @@
 @echo off
 python --version
-python query_spider.py 0
+cd src
+python src/query_spider.py 0
 pause

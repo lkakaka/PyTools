@@ -76,7 +76,7 @@ class QuerySpider(SpiderBase):
         choose_city = self.choose_box.find_element_by_css_selector('.choose-tit.cityName')
         block_elem = self.choose_box.find_element_by_class_name("block")
         choose_block = block_elem.find_element_by_class_name("active")
-        full_block_name = choose_prov.text + choose_city.text + choose_block.text
+        full_block_name = choose_prov.text + " " + choose_city.text + choose_block.text
 
         risk_table = None
         # 如果risk-table元素不存在,后面的find_element_by_class_name非常耗时
