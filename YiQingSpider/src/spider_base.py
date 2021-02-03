@@ -74,10 +74,10 @@ class RiskBlock:
 
 
 class SpiderBase(object):
-
     NEW_ADD_TAG = u"(新增)"
     OUTPUT_PATH = "../"
     TEMP_PATH = "../tmp/"
+    TEMPLATE_PATH = "../template/"
 
     def __init__(self, show_browser):
         self.risk_blocks = {RiskLevel.HIGH: [], RiskLevel.MEDIUM: []}
@@ -107,6 +107,13 @@ class SpiderBase(object):
         soup = BeautifulSoup(self.driver.page_source, 'html.parser')
         print(soup.prettify())
 
+    def set_result_time(self, time_txt):
+        if self.result_time is not None:
+            return
+        match_obj = re.match(r'\D*(\d+-\d+-\d+ \d+).*', time_txt)
+        time_str = match_obj.group(1) + ":00:00"
+        self.result_time = datetime.datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+
     def add_risk_block(self, risk_text, block_name):
         risk_level = RiskLevel.text_to_risk_level(risk_text)
         if risk_level == RiskLevel.LOW:
@@ -120,35 +127,66 @@ class SpiderBase(object):
             return
         lst_block.append(risk_block)
 
-    def output_risk_record(self):
-        print("\n\n")
-        now_time = time.time()
-        last_str_time = time.strftime("%Y-%m-%d", time.localtime(now_time - 3600 * 24))
-        # last_f_name = u"{0}RiskBlock_{1}.txt".format(SpiderBase.TEMP_PATH, last_str_time)
-        last_result_time_tup = time.localtime(now_time - 3600 * 24)
-        last_result_time_str = u"{0}月{1}日15时".format(last_result_time_tup.tm_mon, last_result_time_tup.tm_mday)
-        last_f_name = u"{0}关于发布国内疫情风险等级提示的通知（截至{1}）.docx".format(SpiderBase.OUTPUT_PATH, last_result_time_str)
-        if os.path.exists(last_f_name):
-            # self.last_blocks = self.read_record_from_file(last_f_name)
-            self.last_blocks = self.read_record_from_word(last_f_name)
-        else:
-            print("!!!无法输出新增记录,前一天的记录不存在!!!{0}\n".format(last_f_name))
+    def format_result_time(self):
+        time_tup = self.result_time.timetuple()
+        return u"{0}月{1}日{2}时".format(time_tup.tm_mon, time_tup.tm_mday, time_tup.tm_hour)
 
-        str_time = time.strftime("%Y-%m-%d", time.localtime(now_time))
-        f_name = u"{0}RiskBlock_{1}.txt".format(SpiderBase.TEMP_PATH, str_time)
+    def format_result_time_ex(self):
+        return self.result_time.strftime("%Y-%m-%d")
+
+    def format_last_result_time(self):
+        time_tup = datetime.datetime.fromtimestamp(self.result_time.timestamp() - 24 * 3600).timetuple()
+        return u"{0}月{1}日{2}时".format(time_tup.tm_mon, time_tup.tm_mday, time_tup.tm_hour)
+
+    def get_last_result_file_name(self):
+        # now_time = time.time()
+        # last_str_time = time.strftime("%Y-%m-%d", time.localtime(now_time - 3600 * 24))
+        # last_f_name = u"{0}RiskBlock_{1}.txt".format(SpiderBase.TEMP_PATH, last_str_time)
+        time_str = self.format_last_result_time()
+        return u"{0}关于发布国内疫情风险等级提示的通知（截至{1}）.docx".format(SpiderBase.OUTPUT_PATH, time_str)
+
+    def init_last_risk_block_lst(self):
+        last_f_name = self.get_last_result_file_name()
+        if not os.path.exists(last_f_name):
+            print("!!!无法输出新增记录,前一天的记录不存在!!!{0}\n".format(last_f_name))
+            return
+        # self.last_blocks = self.read_record_from_file(last_f_name)
+        self.last_blocks = self.read_record_from_word(last_f_name)
+        print("昨日({0})高风险地区:{1}个, 中风险地区:{2}个".format(self.format_last_result_time(),
+                                                     len(self.last_blocks[RiskLevel.HIGH]),
+                                                     len(self.last_blocks[RiskLevel.MEDIUM])))
+
+    def get_all_last_risk_block_lst(self):
+        if self.last_blocks is None:
+            return None
+        block_lst = []
+        for risk_lv, blocks in self.last_blocks.items():
+            block_lst.extend(blocks)
+        return block_lst
+
+    def output_risk_record(self):
+        print("---------------------统计结果--------------------")
+        # 读取上次记录
+        self.init_last_risk_block_lst()
+        last_risk_blocks = self.get_all_last_risk_block_lst()
+
+        # 写入临时记录文件、标记新增区域、中风险地区按省分类
+        f_name = u"{0}RiskBlock_{1}.txt".format(SpiderBase.TEMP_PATH, self.format_result_time_ex())
         f = open(f_name, 'w', encoding="utf8")
         medium_risk_block = {}  # {province : [RiskBlock,]}
+        new_blocks = []
         for risk_lv, blocks in self.risk_blocks.items():
             risk_block_count_str = RiskLevel.risk_level_to_text(risk_lv) + ":({0}个)".format(len(blocks))
             f.writelines(risk_block_count_str + "\n")
-            print(risk_block_count_str)
+            # print(risk_block_count_str)
             for block in blocks:
                 block_str = block.full_name_with_sep()
-                if self.last_blocks is not None and block not in self.last_blocks[RiskLevel.HIGH] and block not in self.last_blocks[RiskLevel.MEDIUM]:
+                if last_risk_blocks is not None and block not in last_risk_blocks:
                     block.is_new_add = True
                     block_str = block_str + SpiderBase.NEW_ADD_TAG
+                    new_blocks.append(block)
                 f.writelines(block_str + "\n")
-                print(block_str)
+                # print(block_str)
 
                 if risk_lv == RiskLevel.MEDIUM:
                     if block.province not in medium_risk_block:
@@ -156,23 +194,25 @@ class SpiderBase(object):
                     medium_risk_block[block.province].append(block)
 
             f.writelines("\n")
-            print("\n")
+            # print("\n")
         f.close()
 
-        new_blocks = self.calc_new_block()
-        new_high_block_str = ""
-        new_medium_block_str = ""
-        new_low_block_str = ""
-        if new_blocks is not None:
-            new_high_block_str = self.join_block(u"、", new_blocks.get(RiskLevel.HIGH))
-            new_medium_block_str = self.join_block(u"、", new_blocks.get(RiskLevel.MEDIUM))
-            new_low_block_str = self.join_block(u"、", new_blocks.get(RiskLevel.LOW))
+        # 调整风险等级的地区
+        adjust_blocks = self.calc_adjust_risk_lv_block()
+        adjust_high_blocks = adjust_blocks.get(RiskLevel.HIGH)
+        adjust_medium_blocks = adjust_blocks.get(RiskLevel.MEDIUM)
+        adjust_low_blocks = adjust_blocks.get(RiskLevel.LOW)
+        adjust_high_block_str = self.join_block(u"、", adjust_high_blocks)
+        adjust_medium_block_str = self.join_block(u"、", adjust_medium_blocks)
+        adjust_low_block_str = self.join_block(u"、", adjust_low_blocks)
 
+        # 高风险区列表
         high_risk_str = ""
         high_risk_blocks = self.risk_blocks[RiskLevel.HIGH]
         for block in high_risk_blocks:
             high_risk_str += "{0}\n".format(block.full_name)
 
+        # 中风险区列表
         med_risk_str = ""
         medium_block_idx = 1
         for prov, blocks in medium_risk_block.items():
@@ -182,26 +222,45 @@ class SpiderBase(object):
                 medium_block_idx += 1
             med_risk_str += "\n"
 
-        result_time_tup = self.result_time.timetuple()
-        result_time_str = u"{0}月{1}日{2}时".format(result_time_tup.tm_mon, result_time_tup.tm_mday, result_time_tup.tm_hour)
+        print("今日({0})高风险区:{1}个, 中风险区:{2}个".format(self.format_result_time(), len(high_risk_blocks),
+                                                   medium_block_idx - 1))
+        print("新增区域({0}个):\n{1}\n".format(len(new_blocks), self.join_block("\n", new_blocks)))
+        print("调为高风险区({0}个):\n{1}\n".format(len(adjust_high_blocks), self.join_block("\n", adjust_high_blocks)))
+        print("调为中风险区({0}个):\n{1}\n".format(len(adjust_medium_blocks), self.join_block("\n", adjust_medium_blocks)))
+        print("调为低风险区({0}个):\n{1}\n".format(len(adjust_low_blocks), self.join_block("\n", adjust_low_blocks)))
+        print("高风险区(共{0}个):".format(len(high_risk_blocks)))
+        print(high_risk_str)
+        print("中风险区(共{0}个):".format(medium_block_idx - 1))
+        print(med_risk_str)
+
+        result_time_str = self.format_result_time()
         # result_time_str = self.result_time.strftime("%m月%d日%H时")
         cur_time_tup = datetime.datetime.now().timetuple()
         cur_date_str = u"{0}年{1}月{2}日".format(cur_time_tup.tm_year, cur_time_tup.tm_mon, cur_time_tup.tm_mday)
         # cur_date_str = time.strftime("%Y年%m月%d日", time.localtime(now_time))
 
-        doc = Document(u'{0}模板.docx'.format(SpiderBase.OUTPUT_PATH))
+        context = {
+            "ResultTime": result_time_str,
+            "NewHighRiskBlock": adjust_high_block_str,
+            "NewMediumRiskBlock": adjust_medium_block_str,
+            "CurDate": cur_date_str,
+            "NewLowRiskBlock": adjust_low_block_str,
+            "HighRiskBlockCount": str(len(high_risk_blocks)),
+            "HighRiskBlockContent": high_risk_str,
+            "MediumRiskBlockCount": str(medium_block_idx - 1),
+            "MediumRiskBlockContent": med_risk_str,
+        }
+
+        self.gen_notice_file(context)
+
+    def gen_notice_file(self, context):
+        # 根据通知模板生成通知
+        doc = Document(u'{0}模板.docx'.format(SpiderBase.TEMPLATE_PATH))
         paragraphs = doc.paragraphs
         for par in paragraphs:
             for run in par.runs:
-                run.text = run.text.replace("ResultTime", result_time_str)
-                run.text = run.text.replace("NewHighRiskBlock", new_high_block_str)
-                run.text = run.text.replace("NewMediumRiskBlock", new_medium_block_str)
-                run.text = run.text.replace("CurDate", cur_date_str)
-                run.text = run.text.replace("NewLowRiskBlock", new_low_block_str)
-                run.text = run.text.replace("HighRiskBlockCount", str(len(high_risk_blocks)))
-                run.text = run.text.replace("HighRiskBlockContent", high_risk_str)
-                run.text = run.text.replace("MediumRiskBlockCount", str(medium_block_idx - 1))
-                run.text = run.text.replace("MediumRiskBlockContent", med_risk_str)
+                for k, v in context.items():
+                    run.text = run.text.replace(k, v)
                 # if run.text.find("MediumRiskBlockContent") >= 0:
                 #     run.text = run.text.replace("MediumRiskBlockContent", "")
                 #     medium_block_idx = 1
@@ -216,6 +275,7 @@ class SpiderBase(object):
                 #             new_run.add_break()
                 #             medium_block_idx += 1
 
+        result_time_str = self.format_result_time()
         save_file_name = u"{0}关于发布国内疫情风险等级提示的通知（截至{1}）.docx".format(SpiderBase.OUTPUT_PATH, result_time_str)
         doc.save(save_file_name)
         # self.output_new_add_risk_blocks()
@@ -229,18 +289,22 @@ class SpiderBase(object):
                 block_str += sep
         return block_str
 
-    # 计算调整的地区
-    def calc_new_block(self):
+    # 计算调整风险等级的地区
+    def calc_adjust_risk_lv_block(self):
+        new_high_block = []
+        new_medium_block = []
+        new_low_block = []
+        adjust_blocks = {
+            RiskLevel.HIGH: new_high_block,
+            RiskLevel.MEDIUM: new_medium_block,
+            RiskLevel.LOW: new_low_block
+        }
         if self.last_blocks is None:
-            return
+            return adjust_blocks
         high_block = self.risk_blocks[RiskLevel.HIGH]
         medium_block = self.risk_blocks[RiskLevel.MEDIUM]
         last_high_block = self.last_blocks.get(RiskLevel.HIGH)
         last_medium_block = self.last_blocks.get(RiskLevel.MEDIUM)
-
-        new_high_block = []
-        new_medium_block = []
-        new_low_block = []
         for block in high_block:
             if block in last_high_block:
                 continue
@@ -267,7 +331,7 @@ class SpiderBase(object):
                 continue
             new_low_block.append(block)
 
-        return {RiskLevel.HIGH: new_high_block, RiskLevel.MEDIUM: new_medium_block, RiskLevel.LOW: new_low_block}
+        return adjust_blocks
 
     def read_record_from_file(self, f_name):
         f = open(f_name, 'r', encoding="utf-8")
@@ -297,8 +361,6 @@ class SpiderBase(object):
         risk_blocks = {RiskLevel.HIGH: [], RiskLevel.MEDIUM: []}
         doc = Document(f_name)
         paragraphs = doc.paragraphs
-        # pars_string = [par.text for par in paragraphs]
-        # print(pars_string)
         is_start = False
         h_start_idx = 0
         h_end_idx = 0
@@ -332,8 +394,8 @@ class SpiderBase(object):
                     prov_pos = text.find(u"市")
                 if prov_pos < 0:
                     continue
-                province = text[0:prov_pos+1]
-                block = text[prov_pos+1:]
+                province = text[0:prov_pos + 1]
+                block = text[prov_pos + 1:]
                 # print(province, block)
                 risk_block = RiskBlock(province, block)
                 risk_blocks[RiskLevel.HIGH].append(risk_block)
@@ -352,14 +414,12 @@ class SpiderBase(object):
                 else:
                     dot_pos = text.find(u".")
                     if dot_pos >= 0:
-                        block_name = text[dot_pos+1:]
+                        block_name = text[dot_pos + 1:]
                         risk_block = RiskBlock(m_province, block_name)
                         risk_blocks[RiskLevel.MEDIUM].append(risk_block)
                         # print(m_province, block_name)
 
-        print("昨日高风险:{0}, 中风险:{1}".format(len(risk_blocks[RiskLevel.HIGH]), len(risk_blocks[RiskLevel.MEDIUM])))
         return risk_blocks
-
 
     # 输出新增区域
     def output_new_add_risk_blocks(self):
@@ -394,4 +454,3 @@ class SpiderBase(object):
                 print(block)
                 new_f.writelines(block)
         new_f.close()
-

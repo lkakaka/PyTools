@@ -27,8 +27,7 @@ class ResultSpider(SpiderBase):
         r_header = self.driver.find_element_by_class_name('r-header')
         r_time = r_header.find_element_by_class_name("r-time")
         print(r_time.text)
-        match_obj = re.match(r'\D+(\d+-\d+-\d+ \d+).*', r_time.text)
-        self.set_time(match_obj.group(1))
+        self.set_result_time(r_time.text)
         divs = r_header.find_elements_by_tag_name("div")
         for div in divs:
             div.click()
@@ -40,13 +39,8 @@ class ResultSpider(SpiderBase):
                 self.get_risk_block(True)
             else:
                 self.get_risk_block(False)
-            print("\n")
-        print("-----------------output----------------")
+            print("")
         self.output_risk_record()
-
-    def set_time(self, time_str):
-        time_str += ":00:00"
-        self.result_time = datetime.datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
 
     def get_risk_block(self, is_high):
         prefix = "h" if is_high else "m"
@@ -81,7 +75,7 @@ class ResultSpider(SpiderBase):
             block_name = texts[0]
             if style == "display: none;":
                 print(block_name)
-                self.add_risk_block(risk_text, block_name)
+                self.add_risk_block(risk_text, block_name + u"全域")
             else:
                 trs = table.find_elements_by_tag_name("tr")
                 for tr in trs:

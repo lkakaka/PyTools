@@ -3,6 +3,7 @@
 
 from spider_base import SpiderBase
 from selenium.common.exceptions import NoSuchElementException
+import re
 
 
 class QuerySpider(SpiderBase):
@@ -88,24 +89,27 @@ class QuerySpider(SpiderBase):
                 risk_table = None
 
             # print("time={0}".format(time.time() - st))
+        time_date = self.container.find_element_by_class_name('timeDate')
+        self.set_result_time(time_date.text)
 
         if risk_table is not None:
+            self.output_html()
             tbody = risk_table.find_element_by_tag_name("tbody")
             lines = tbody.find_elements_by_tag_name("tr")
             for line in lines:
                 cols = line.find_elements_by_tag_name("td")
                 full_block_name1 = full_block_name + cols[0].text
-                print(full_block_name1 + " " + cols[1].text)
+                print(full_block_name1 + " " + cols[1].text + " " + time_date.text)
                 self.add_risk_block(cols[1].text, full_block_name1)
         else:
             search_content = self.choose_box.find_element_by_class_name("search-content")
             result = search_content.find_element_by_tag_name('span')
-            time_date = search_content.find_element_by_class_name('timeDate')
             print(full_block_name + ":" + result.text + " " + time_date.text)
-            self.add_risk_block(result.text, full_block_name)
+
+            self.add_risk_block(result.text, full_block_name + u"全域")
 
     def read_filter_blocks(self):
-        f_name = u"./query_blocks.ini"
+        f_name = u"{0}query_blocks.ini".format(SpiderBase.TEMPLATE_PATH)
         f = open(f_name, 'r')
         for line in f.readlines():
             if line.startswith("#"):
