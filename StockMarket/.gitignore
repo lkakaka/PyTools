@@ -1,0 +1,5 @@
+__pycache__/
+.idea/
+*.wav
+data/
+log.txt
