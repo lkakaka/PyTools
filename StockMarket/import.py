@@ -7,7 +7,7 @@ def import_spider_script():
     cx = sqlite3.connect('./data/project.db')  # 创建数据库，如果数据库已经存在，则链接数据库；如果数据库不存在，则先创建数据库，再链接该数据库。
     cu = cx.cursor()  # 定义一个游标，以便获得查询对象。
     script = None
-    with open('main.py', mode='r', encoding="utf8") as f:
+    with open('./src/main.py', mode='r', encoding="utf8") as f:
         script = f.read()
     if not script:
         print("cannot open script file!!!")

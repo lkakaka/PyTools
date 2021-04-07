@@ -8,14 +8,11 @@ import http.client
 # Python 3.x引入urllib.parse模块。
 import urllib.parse
 import json
-# pip install playsound
-from playsound import playsound
 # pip install aliyun-python-sdk-core==2.13.3 # 安装阿里云SDK核心库（获取token）
-import os
-import time
+from src.tts.tts_base import TTSBase
 
 
-class AlyTTS(object):
+class AlyTTS(TTSBase):
     APP_KEY = 'DGkmkLH5RTst84Vp'
     TOKEN = 'b5985bafc5ee4e97861cc3f29dc1fb9b'
 
@@ -123,8 +120,7 @@ class AlyTTS(object):
             print('The POST request failed: ' + str(body))
         conn.close()
 
-    @staticmethod
-    def read_text(text):
+    def translate_text(self, text, audio_save_file):
         print("start read text " + text)
         # 采用RFC 3986规范进行urlencode编码。
         text_url_encode = text
@@ -136,17 +132,19 @@ class AlyTTS(object):
         text_url_encode = text_url_encode.replace("*", "%2A")
         text_url_encode = text_url_encode.replace("%7E", "~")
         print('text: ' + text_url_encode)
-        audio_save_file = 'syAudio.wav'
+        # audio_save_file = '../../audio.wav'
         file_format = 'wav'
         sample_rate = 16000
         # GET请求方式
         AlyTTS.process_get_request(AlyTTS.APP_KEY, AlyTTS.TOKEN, text_url_encode, audio_save_file, file_format, sample_rate)
         # POST请求方式
         # process_post_request(AlyTTS.APP_KEY, AlyTTS.TOKEN, text, audio_save_file, file_format, sample_rate)
-        playsound(audio_save_file, block=True)
         print("end read text " + text)
 
 
 if __name__ == "__main__":
     txt = '这是什么鬼东西'
-    AlyTTS.read_text(txt)
+    audio_file = '../../audio.wav'
+    AlyTTS().translate_text(txt, audio_file)
+    from playsound import playsound
+    playsound(audio_file, block=True)
