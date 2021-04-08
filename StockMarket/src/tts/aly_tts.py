@@ -10,21 +10,28 @@ import urllib.parse
 import json
 # pip install aliyun-python-sdk-core==2.13.3 # 安装阿里云SDK核心库（获取token）
 from src.tts.tts_base import TTSBase
+import time
 
 
 class AlyTTS(TTSBase):
     APP_KEY = 'DGkmkLH5RTst84Vp'
-    TOKEN = 'b5985bafc5ee4e97861cc3f29dc1fb9b'
+    AUDIO_FILE = "audio.wav"
 
-    @staticmethod
-    def get_token():
+    def __init__(self):
+        self._token = ""
+        self._token_expire_time = 0
+        self.get_token()
+
+    def get_token(self):
+        if self._token_expire_time - time.time() > 60:
+            return
         from aliyunsdkcore.client import AcsClient
         from aliyunsdkcore.request import CommonRequest
 
         # 创建AcsClient实例
         client = AcsClient(
-            "<您的AccessKey Id>",
-            "<您的AccessKey Secret>",
+            "LTAI5tLKcEUa1AH5eLhKoYuL",  # <您的AccessKey Id>,
+            "W81JYe6HswKjB30hluROnRCOcrj5Qv",  # 您的AccessKey Secret
             "cn-shanghai"
         )
 
@@ -48,6 +55,10 @@ class AlyTTS(TTSBase):
         # }
 
         print(response)
+        res_dict = json.loads(response)
+        token_info = res_dict.get("Token", {})
+        self._token = token_info.get("Id", "")
+        self._token_expire_time = token_info.get("ExpireTime", 0)
 
     @staticmethod
     def process_get_request(app_key, token, text, audio_save_file, file_format, sample_rate):
@@ -80,13 +91,16 @@ class AlyTTS(TTSBase):
         content_type = response.getheader('Content-Type')
         print(content_type)
         body = response.read()
+        is_success = False
         if 'audio/mpeg' == content_type:
             with open(audio_save_file, mode='wb') as f:
                 f.write(body)
+                is_success = True
             print('The GET request succeed!')
         else:
             print('The GET request failed: ' + str(body))
         conn.close()
+        return is_success
 
     @staticmethod
     def process_post_request(app_key, token, text, audio_save_file, file_format, sample_rate):
@@ -120,8 +134,9 @@ class AlyTTS(TTSBase):
             print('The POST request failed: ' + str(body))
         conn.close()
 
-    def translate_text(self, text, audio_save_file):
-        print("start read text " + text)
+    def translate_text(self, text):
+        self.get_token()
+        # print("start read text " + text)
         # 采用RFC 3986规范进行urlencode编码。
         text_url_encode = text
         # Python 2.x请使用urllib.quote。
@@ -132,19 +147,20 @@ class AlyTTS(TTSBase):
         text_url_encode = text_url_encode.replace("*", "%2A")
         text_url_encode = text_url_encode.replace("%7E", "~")
         print('text: ' + text_url_encode)
-        # audio_save_file = '../../audio.wav'
+        audio_save_file = TTSBase.WAV_SAVE_FILE
         file_format = 'wav'
         sample_rate = 16000
         # GET请求方式
-        AlyTTS.process_get_request(AlyTTS.APP_KEY, AlyTTS.TOKEN, text_url_encode, audio_save_file, file_format, sample_rate)
+        is_success = AlyTTS.process_get_request(AlyTTS.APP_KEY, self._token, text_url_encode, audio_save_file,
+                                                file_format, sample_rate)
         # POST请求方式
-        # process_post_request(AlyTTS.APP_KEY, AlyTTS.TOKEN, text, audio_save_file, file_format, sample_rate)
-        print("end read text " + text)
+        # process_post_request(AlyTTS.APP_KEY, self._token, text, audio_save_file, file_format, sample_rate)
+        # print("end read text " + text)
+        return is_success, audio_save_file
 
 
 if __name__ == "__main__":
     txt = '这是什么鬼东西'
-    audio_file = '../../audio.wav'
-    AlyTTS().translate_text(txt, audio_file)
+    AlyTTS().translate_text(txt)
     from playsound import playsound
-    playsound(audio_file, block=True)
+    playsound(TTSBase.WAV_SAVE_FILE, block=True)

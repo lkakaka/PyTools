@@ -38,10 +38,9 @@ class Handler(BaseHandler):
     def detail_page(self, response):
         self._sound_mgr.add_read_text(response.doc('title').text())
         return {
-            'text': response.text,
             "url": response.url,
             "title": response.doc('title').text(),
-            'p': response.doc('p').text(),
+            'body': response.doc('body').text(),
         }
 
 

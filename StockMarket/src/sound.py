@@ -1,19 +1,17 @@
-
 import threading
 import time
 import os
-from src.tts.aly_tts import AlyTTS
+from src.tts.tts_factory import TTSFactory
 from src.logger import Logger
 # pip install playsound
 from playsound import playsound
 
 
 class Sound(object):
-
     AUDIO_SAVE_FILE = os.path.dirname(__file__) + "/../audio.wav"
 
     def __init__(self):
-        self._tts_obj = AlyTTS()
+        self._tts_obj = TTSFactory.create_tts()
         self._wait_read_text = []
         self._sound_thread = threading.Thread(target=self.play_sound_thread_func)
         self._sound_thread.start()
@@ -26,10 +24,13 @@ class Sound(object):
                 continue
             txt = self._wait_read_text[0]
             self._wait_read_text = self._wait_read_text[1:]
-            Logger.info("play sound start------------" + txt)
-            self._tts_obj.translate_text(txt, Sound.AUDIO_SAVE_FILE)
-            playsound(Sound.AUDIO_SAVE_FILE, block=True)
-            Logger.info("play sound end------------")
+            Logger.info("播放语音:" + txt)
+            is_success, audio_file = self._tts_obj.translate_text(txt)
+            if is_success:
+                playsound(audio_file, block=True)
+            else:
+                Logger.info("播放语音失败,tts转换语音失败!!!!!!" + txt)
+
             time.sleep(0.5)
 
     def add_read_text(self, text):
