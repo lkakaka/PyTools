@@ -1,3 +1,3 @@
 @echo off
-python import.py
+python src\tool.py
 pause

@@ -1,3 +1,4 @@
 @echo off
-python import.py
-pyspider all
+"c:/Python36/python" src/tool.py
+"c:/Python36/Scripts/pyspider" all
+pause
