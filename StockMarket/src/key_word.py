@@ -14,6 +14,8 @@ Logger.info("关键词:\n" + "\n".join(KEY_WORDS))
 
 
 def contain_keyword(text):
+    if not KEY_WORDS:
+        return True
     for key_word in KEY_WORDS:
         if text.find(key_word) >= 0:
             return True
