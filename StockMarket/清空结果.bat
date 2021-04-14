@@ -1,3 +1,3 @@
 @echo off
-python src/tool.py cr
+python src/tool.py cr StockMarket
 pause

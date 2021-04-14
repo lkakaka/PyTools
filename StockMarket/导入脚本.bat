@@ -1,3 +1,3 @@
 @echo off
-python src\tool.py
+python src\tool.py is StockMarket
 pause
