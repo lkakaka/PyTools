@@ -28,12 +28,24 @@ class Handler(BaseHandler):
                 if line.startswith("#"):
                     continue
                 self.crawl(line, callback=self.index_page, age=10 * 60, auto_recrawl=True)
+                # self.crawl(line, callback=self.index_page, age=10 * 60, auto_recrawl=True, fetch_type="js", js_script="""
+                #    function() {
+                #        window.setTimeout(function() {
+                #            window.scrollTo(0,document.body.scrollHeight);
+                #        }, 3000);
+                #    }
+                #    """)
                 Logger.info(line)
 
     @config(age=-1)
     def index_page(self, response):
+        # Logger.info(response.doc('.feedlist_mod.home'))
+        # for each in response.doc('.feedlist_mod.home h2').items():
+        #     Logger.info("url---------{0},{1}".format(each("a").attr.href, each.text()))
         for each in response.doc('a[href^="http"]').items():
+            Logger.info("url---------{0}".format(each.attr.href))
             self.crawl(each.attr.href, callback=self.detail_page)
+        return self.detail_page(response)
 
     @config(priority=2)
     def detail_page(self, response):
