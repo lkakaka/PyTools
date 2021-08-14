@@ -22,6 +22,7 @@ class ResultSpider(SpiderBase):
         # if True:
         #     return
         # get方式打开网页
+        print(u"正在获取网页信息...")
         self.driver.get("http://bmfw.www.gov.cn/yqfxdjcx/risk.html")
         # self.output_html()
         r_header = self.driver.find_element_by_class_name('r-header')
@@ -72,20 +73,25 @@ class ResultSpider(SpiderBase):
             style = table.get_attribute("style")
             # print(style)
             texts = header.text.split("\n")
-            block_name = texts[0]
+            city_name = texts[0]
+            city_info = city_name.split(" ")
+            city_name = city_info[0] + city_info[1]
             if style == "display: none;":
-                print(block_name)
-                self.add_risk_block(risk_text, block_name + u"全域")
+                # print(city_name)
+                block_name = city_info[2] + u"全域"
+                self.add_risk_block(risk_text, city_name, block_name)
             else:
                 trs = table.find_elements_by_tag_name("tr")
                 for tr in trs:
                     h_td1 = tr.find_element_by_class_name(prefix + "-td1")
-                    print(block_name + h_td1.text)
-                    self.add_risk_block(risk_text, block_name + h_td1.text)
+                    block_name = city_info[2] + h_td1.text
+                    # print(city_name)
+                    # print(block_name)
+                    self.add_risk_block(risk_text, city_name, block_name)
 
 
 if __name__ == '__main__':
-    show_browser = False
+    show_browser = True
     import sys
     if len(sys.argv) > 1:
         show_browser = True if sys.argv[1] == "1" else False

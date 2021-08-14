@@ -100,13 +100,13 @@ class QuerySpider(SpiderBase):
                 cols = line.find_elements_by_tag_name("td")
                 full_block_name1 = full_block_name + cols[0].text
                 print(full_block_name1 + " " + cols[1].text + " " + time_date.text)
-                self.add_risk_block(cols[1].text, full_block_name1)
+                self.add_risk_block(cols[1].text, full_block_name, cols[0].text)
         else:
             search_content = self.choose_box.find_element_by_class_name("search-content")
             result = search_content.find_element_by_tag_name('span')
             print(full_block_name + ":" + result.text + " " + time_date.text)
 
-            self.add_risk_block(result.text, full_block_name + u"全域")
+            self.add_risk_block(result.text, full_block_name, u"全域")
 
     def read_filter_blocks(self):
         f_name = u"{0}query_blocks.ini".format(SpiderBase.TEMPLATE_PATH)
@@ -143,7 +143,7 @@ class QuerySpider(SpiderBase):
 
 
 if __name__ == '__main__':
-    show_browser = False
+    show_browser = True
     import sys
     if len(sys.argv) > 1:
         show_browser = True if sys.argv[1] == "1" else False

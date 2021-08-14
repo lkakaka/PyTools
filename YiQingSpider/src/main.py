@@ -4,6 +4,7 @@
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
 import sys
+print(sys.version)
 from bs4 import BeautifulSoup
 import time
 from selenium import webdriver
@@ -15,8 +16,8 @@ from selenium.common.exceptions import NoSuchElementException
 
 def query():
     import urllib.request
-    # req = urllib.request.urlopen('http://bmfw.www.gov.cn/yqfxdjcx/index.html')
-    req = urllib.request.urlopen('http://www.gd.gov.cn/gdywdt/zwzt/yqfk/content/post_3021711.html')
+    req = urllib.request.urlopen('http://bmfw.www.gov.cn/yqfxdjcx/index.html')
+    # req = urllib.request.urlopen('http://www.gd.gov.cn/gdywdt/zwzt/yqfk/content/post_3021711.html')
     html = req.read().decode('utf-8')
     # print(html)
     soup = BeautifulSoup(html, 'html.parser')
