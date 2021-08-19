@@ -96,3 +96,4 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         show_browser = True if sys.argv[1] == "1" else False
     ResultSpider(show_browser)
+    # input("按回车键退出!!!")
