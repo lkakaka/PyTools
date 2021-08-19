@@ -91,7 +91,7 @@ class ResultSpider(SpiderBase):
 
 
 if __name__ == '__main__':
-    show_browser = True
+    show_browser = False
     import sys
     if len(sys.argv) > 1:
         show_browser = True if sys.argv[1] == "1" else False

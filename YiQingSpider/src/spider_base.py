@@ -78,9 +78,9 @@ class RiskBlock:
 
 class SpiderBase(object):
     NEW_ADD_TAG = u"(新增)"
-    OUTPUT_PATH = "../"
-    TEMP_PATH = "../tmp/"
-    TEMPLATE_PATH = "../template/"
+    OUTPUT_PATH = "./"
+    TEMP_PATH = "./tmp/"
+    TEMPLATE_PATH = "./template/"
 
     def __init__(self, show_browser):
         self.risk_blocks = {RiskLevel.HIGH: [], RiskLevel.MEDIUM: []}
@@ -113,6 +113,7 @@ class SpiderBase(object):
     def set_result_time(self, time_txt):
         if self.result_time is not None:
             return
+        print("time=", time_txt)
         match_obj = re.match(r'\D*(\d+-\d+-\d+ \d+).*', time_txt)
         time_str = match_obj.group(1) + ":00:00"
         self.result_time = datetime.datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
@@ -209,13 +210,13 @@ class SpiderBase(object):
         last_risk_blocks = self.get_all_last_risk_block_lst()
 
         # 写入临时记录文件、标记新增区域、中风险地区按省分类
-        f_name = u"{0}RiskBlock_{1}.txt".format(SpiderBase.TEMP_PATH, self.format_result_time_ex())
-        f = open(f_name, 'w', encoding="utf8")
+        # f_name = u"{0}RiskBlock_{1}.txt".format(SpiderBase.TEMP_PATH, self.format_result_time_ex())
+        # f = open(f_name, 'w', encoding="utf8")
         medium_risk_block = {}  # {province : [RiskBlock,]}
         new_blocks = []
         for risk_lv, blocks in self.risk_blocks.items():
             risk_block_count_str = RiskLevel.risk_level_to_text(risk_lv) + ":({0}个)".format(len(blocks))
-            f.writelines(risk_block_count_str + "\n")
+            # f.writelines(risk_block_count_str + "\n")
             # print(risk_block_count_str)
             for block in blocks:
                 block_str = block.full_name_with_sep()
@@ -223,7 +224,7 @@ class SpiderBase(object):
                     block.is_new_add = True
                     block_str = block_str + SpiderBase.NEW_ADD_TAG
                     new_blocks.append(block)
-                f.writelines(block_str + "\n")
+                # f.writelines(block_str + "\n")
                 # print(block_str)
 
                 if risk_lv == RiskLevel.MEDIUM:
@@ -231,9 +232,9 @@ class SpiderBase(object):
                         medium_risk_block[block.province] = []
                     medium_risk_block[block.province].append(block)
 
-            f.writelines("\n")
+            # f.writelines("\n")
             # print("\n")
-        f.close()
+        # f.close()
 
         # 调整风险等级的地区
         adjust_blocks = self.calc_adjust_risk_lv_block()
@@ -537,4 +538,5 @@ class SpiderBase(object):
 
 
 if __name__ == '__main__':
-    SpiderBase.read_record_from_word(SpiderBase.OUTPUT_PATH + "关于发布国内疫情风险等级提示的通知（截至8月14日13时）.docx")
+    # SpiderBase.read_record_from_word(SpiderBase.OUTPUT_PATH + "关于发布国内疫情风险等级提示的通知（截至8月14日13时）.docx")
+    pass
