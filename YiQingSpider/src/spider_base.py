@@ -9,6 +9,7 @@ from docx import Document
 import datetime
 import re
 from docx.oxml.ns import qn
+from docx.enum.style import WD_STYLE_TYPE
 
 
 class RiskLevel:
@@ -183,7 +184,7 @@ class SpiderBase(object):
 
     def init_last_risk_block_lst(self):
         last_f_name = self.get_last_result_file_name()
-        if not os.path.exists(last_f_name):
+        if last_f_name is None or not os.path.exists(last_f_name):
             print("!!!无法输出新增记录,前一天的记录不存在!!!{0}\n".format(last_f_name))
             return
         print(u"上一次通知文件:{0}".format(last_f_name))
@@ -295,27 +296,28 @@ class SpiderBase(object):
     def gen_notice_file(self, context, medium_risk_block):
         # 根据通知模板生成通知
         doc = Document(u'{0}模板.docx'.format(SpiderBase.TEMPLATE_PATH))
+        doc.styles.add_style('Song', WD_STYLE_TYPE.CHARACTER).font.name = '宋体'  # 添加字体样式-Song
+        doc.styles['Song']._element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')
+
         paragraphs = doc.paragraphs
         for par in paragraphs:
             # 中风险区列表
             for run in par.runs:
                 if run.text == "MediumRiskBlockContent":
                     # r = par.add_run("测试Run")
-                    preset_font = run.font.name
+                    preset_font_name = run.font.name
                     preset_font_size = run.font.size
+                    doc.styles.add_style('MediumRiskList_Style', WD_STYLE_TYPE.CHARACTER).font.name = preset_font_name  # 添加字体样式
+                    doc.styles['MediumRiskList_Style']._element.rPr.rFonts.set(qn('w:eastAsia'), preset_font_name)
                     # print(preset_font)
                     par.clear()
                     medium_block_idx = 1
                     for prov, blocks in medium_risk_block.items():
-                        r = par.add_run(u"{0}（共{1}个）\n".format(prov, len(blocks)))
-                        # r.font.name = u"宋体"
-                        # r._element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')
+                        r = par.add_run(u"{0}（共{1}个）\n".format(prov, len(blocks)), style="MediumRiskList_Style")
                         r.font.size = preset_font_size
                         r.bold = True
                         for block in blocks:
-                            r = par.add_run("{0}.{1}\n".format(medium_block_idx, block.block_name_with_new_tag()))
-                            # r.font.name = u"宋体"
-                            # r.font._element.rPr.rFonts.set(qn('w:eastAsia'), u'宋体')
+                            r = par.add_run("{0}.{1}\n".format(medium_block_idx, block.block_name_with_new_tag()), style="MediumRiskList_Style")
                             r.font.size = preset_font_size
                             r.bold = False
                             medium_block_idx += 1
